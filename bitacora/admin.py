@@ -3,9 +3,11 @@
 from django.contrib import admin
 
 from .models import (
+    DocumentTag,
     NodeDocument,
     Project,
     ProjectNode,
+    Tag,
     WorkSession,
     WorkSessionDocumentReference,
     WorkSessionNodeReference,
@@ -81,3 +83,15 @@ class WorkSessionNodeReferenceAdmin(admin.ModelAdmin):
 @admin.register(WorkSessionDocumentReference)
 class WorkSessionDocumentReferenceAdmin(admin.ModelAdmin):
     list_display = ["work_session", "document", "created_at"]
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ["name", "owner", "visibility", "is_archived", "updated_at"]
+    search_fields = ["name", "slug", "description"]
+    list_filter = ["visibility", "is_archived", "owner"]
+
+
+@admin.register(DocumentTag)
+class DocumentTagAdmin(admin.ModelAdmin):
+    list_display = ["document", "tag", "created_at"]

@@ -13,4 +13,12 @@
   <article>
     {{ rendered_body|safe }}
   </article>
+  {% if tags %}
+    <h2>Tags</h2>
+    <ul>
+      {% for tag in tags %}
+        <li>{{ tag.name }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
 {% endblock %}

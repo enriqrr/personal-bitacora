@@ -4,19 +4,22 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 
 from .forms import (
+    DocumentTagForm,
     NodeDocumentForm,
     ProjectForm,
     ProjectNodeForm,
     ProjectNodeMoveForm,
+    TagForm,
     WorkSessionForm,
 )
-from .models import NodeDocument, Project, ProjectNode, WorkSession
+from .models import NodeDocument, Project, ProjectNode, Tag, WorkSession
 from .permissions import owner_required
 from .rendering import render_markdown_to_safe_html
 from .selectors import (
     get_breadcrumb_nodes,
     get_owner_document_by_id,
     get_owner_documents_for_node,
+    get_owner_documents_for_tag,
     get_owner_node_by_id,
     get_owner_project_by_slug,
     get_owner_projects,
@@ -25,12 +28,16 @@ from .selectors import (
     get_owner_sessions_for_project,
     get_owner_sessions_referencing_document,
     get_owner_sessions_referencing_node,
+    get_owner_tag_by_slug,
+    get_owner_tags,
+    get_owner_tags_for_document,
     get_owner_nodes_for_project,
     get_public_node_by_id,
     get_public_nodes_for_project,
     get_public_document_by_id,
     get_public_documents_for_node,
     get_public_document_references_for_session,
+    get_public_tags_for_document,
     get_public_project_by_slug,
     get_public_projects,
     get_public_session_by_id,
@@ -41,12 +48,16 @@ from .services import (
     archive_node_document,
     archive_project,
     archive_project_node,
+    archive_tag,
     archive_work_session,
     create_project,
     create_project_node,
     create_node_document,
+    create_tag,
     create_work_session,
     move_project_node,
+    set_document_tags,
+    update_tag,
     update_node_document,
     update_project,
     update_project_node,
@@ -140,10 +151,11 @@ def public_document_detail(request, document_id):
     except NodeDocument.DoesNotExist as exc:
         raise Http404("Document not found.") from exc
     rendered_body = render_markdown_to_safe_html(document.body_markdown)
+    tags = get_public_tags_for_document(document)
     return render(
         request,
         "public/document_detail.html",
-        {"document": document, "rendered_body": rendered_body},
+        {"document": document, "rendered_body": rendered_body, "tags": tags},
     )
 
 
@@ -264,6 +276,74 @@ def owner_session_archive(request, session_id):
         raise Http404("Session not found.") from exc
     archive_work_session(work_session)
     return redirect("bitacora:owner_session_detail", session_id=work_session.id)
+
+
+@owner_required
+def owner_tag_list(request):
+    tags = get_owner_tags(request.user)
+    return render(request, "owner/tag_list.html", {"tags": tags})
+
+
+@owner_required
+def owner_tag_create(request):
+    if request.method == "POST":
+        form = TagForm(request.POST, owner=request.user)
+        if form.is_valid():
+            try:
+                tag = create_tag(owner=request.user, **form.cleaned_data)
+                return redirect("bitacora:owner_tag_detail", slug=tag.slug)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = TagForm(owner=request.user)
+    return render(request, "owner/tag_form.html", {"form": form, "tag": None})
+
+
+@owner_required
+def owner_tag_detail(request, slug):
+    try:
+        tag = get_owner_tag_by_slug(request.user, slug)
+    except Tag.DoesNotExist as exc:
+        raise Http404("Tag not found.") from exc
+    documents = get_owner_documents_for_tag(request.user, tag)
+    return render(
+        request,
+        "owner/tag_detail.html",
+        {"tag": tag, "documents": documents},
+    )
+
+
+@owner_required
+def owner_tag_edit(request, slug):
+    try:
+        tag = get_owner_tag_by_slug(request.user, slug)
+    except Tag.DoesNotExist as exc:
+        raise Http404("Tag not found.") from exc
+
+    if request.method == "POST":
+        form = TagForm(request.POST, instance=tag, owner=request.user)
+        if form.is_valid():
+            try:
+                tag = update_tag(tag, **form.cleaned_data)
+                return redirect("bitacora:owner_tag_detail", slug=tag.slug)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = TagForm(instance=tag, owner=request.user)
+    return render(request, "owner/tag_form.html", {"form": form, "tag": tag})
+
+
+@owner_required
+def owner_tag_archive(request, slug):
+    if request.method != "POST":
+        raise Http404("Tag not found.")
+
+    try:
+        tag = get_owner_tag_by_slug(request.user, slug)
+    except Tag.DoesNotExist as exc:
+        raise Http404("Tag not found.") from exc
+    archive_tag(tag)
+    return redirect("bitacora:owner_tag_detail", slug=tag.slug)
 
 
 @owner_required
@@ -457,6 +537,7 @@ def owner_document_detail(request, document_id):
         raise Http404("Document not found.") from exc
     rendered_body = render_markdown_to_safe_html(document.body_markdown)
     sessions = get_owner_sessions_referencing_document(request.user, document)
+    tags = get_owner_tags_for_document(request.user, document)
     return render(
         request,
         "owner/document_detail.html",
@@ -464,7 +545,36 @@ def owner_document_detail(request, document_id):
             "document": document,
             "rendered_body": rendered_body,
             "sessions": sessions,
+            "tags": tags,
         },
+    )
+
+
+@owner_required
+def owner_document_tags(request, document_id):
+    try:
+        document = get_owner_document_by_id(request.user, document_id)
+    except NodeDocument.DoesNotExist as exc:
+        raise Http404("Document not found.") from exc
+
+    if request.method == "POST":
+        form = DocumentTagForm(request.POST, owner=request.user, document=document)
+        if form.is_valid():
+            try:
+                set_document_tags(
+                    owner=request.user,
+                    document=document,
+                    tags=form.cleaned_data["tags"],
+                )
+                return redirect("bitacora:owner_document_detail", document_id=document.id)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = DocumentTagForm(owner=request.user, document=document)
+    return render(
+        request,
+        "owner/document_tag_form.html",
+        {"form": form, "document": document},
     )
 
 

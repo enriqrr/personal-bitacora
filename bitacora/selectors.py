@@ -1,6 +1,6 @@
 """Read/query helpers for Bitacora."""
 
-from .models import NodeDocument, Project, ProjectNode, WorkSession
+from .models import NodeDocument, Project, ProjectNode, Tag, WorkSession
 
 
 def get_public_projects():
@@ -210,3 +210,58 @@ def get_owner_sessions_referencing_document(owner, document):
         project__owner=owner,
         document_references__document=document,
     ).distinct()
+
+
+def get_owner_tags(owner):
+    return Tag.objects.filter(owner=owner)
+
+
+def get_active_owner_tags(owner):
+    return get_owner_tags(owner).filter(is_archived=False)
+
+
+def get_owner_tag_by_slug(owner, slug):
+    return get_owner_tags(owner).get(slug=slug)
+
+
+def get_owner_tags_for_document(owner, document):
+    if document.project.owner_id != owner.id:
+        return Tag.objects.none()
+    return Tag.objects.filter(document_links__document=document).distinct()
+
+
+def is_tag_effectively_public_for_document(tag, document):
+    return (
+        tag.visibility == Tag.Visibility.PUBLIC
+        and not tag.is_archived
+        and is_document_effectively_public(document)
+        and tag.owner_id == document.project.owner_id
+    )
+
+
+def get_public_tags_for_document(document):
+    if not is_document_effectively_public(document):
+        return Tag.objects.none()
+    return Tag.objects.filter(
+        document_links__document=document,
+        visibility=Tag.Visibility.PUBLIC,
+        is_archived=False,
+    ).distinct()
+
+
+def get_owner_documents_for_tag(owner, tag):
+    if tag.owner_id != owner.id:
+        return NodeDocument.objects.none()
+    return NodeDocument.objects.filter(tag_links__tag=tag, project__owner=owner).distinct()
+
+
+def get_public_documents_for_tag(tag):
+    if tag.visibility != Tag.Visibility.PUBLIC or tag.is_archived:
+        return []
+    documents = NodeDocument.objects.filter(tag_links__tag=tag).select_related(
+        "project",
+        "node",
+        "node__project",
+        "node__parent",
+    )
+    return [document for document in documents if is_document_effectively_public(document)]

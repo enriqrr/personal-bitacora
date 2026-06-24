@@ -3,7 +3,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import NodeDocument, Project, ProjectNode, WorkSession
+from .models import NodeDocument, Project, ProjectNode, Tag, WorkSession
+from .selectors import get_active_owner_tags
 
 
 class ProjectForm(forms.ModelForm):
@@ -167,3 +168,45 @@ class WorkSessionForm(forms.ModelForm):
         if started_at and ended_at and ended_at < started_at:
             raise ValidationError("Session end time must be after or equal to start time.")
         return cleaned_data
+
+
+class TagForm(forms.ModelForm):
+    class Meta:
+        model = Tag
+        fields = ["name", "slug", "description", "visibility"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, owner=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owner = owner
+
+    def clean_slug(self):
+        slug = self.cleaned_data["slug"]
+        if not self.owner:
+            return slug
+
+        tags = Tag.objects.filter(owner=self.owner, slug=slug)
+        if self.instance.pk:
+            tags = tags.exclude(pk=self.instance.pk)
+        if tags.exists():
+            raise ValidationError("You already have a tag with this slug.")
+        return slug
+
+
+class DocumentTagForm(forms.Form):
+    tags = forms.ModelMultipleChoiceField(
+        queryset=Tag.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    def __init__(self, *args, owner=None, document=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.owner = owner
+        self.document = document
+        if owner is not None:
+            self.fields["tags"].queryset = get_active_owner_tags(owner)
+        if document is not None:
+            self.fields["tags"].initial = document.tag_links.values_list("tag_id", flat=True)

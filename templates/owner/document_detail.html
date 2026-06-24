@@ -21,6 +21,21 @@
   <article>
     {{ rendered_body|safe }}
   </article>
+  <h2>Tags</h2>
+  <p><a href="{% url 'bitacora:owner_document_tags' document_id=document.id %}">Manage document tags</a></p>
+  {% if tags %}
+    <ul>
+      {% for tag in tags %}
+        <li>
+          <a href="{% url 'bitacora:owner_tag_detail' slug=tag.slug %}">{{ tag.name }}</a>
+          <span>{{ tag.visibility }}</span>
+          {% if tag.is_archived %}<span>ARCHIVED</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No tags assigned.</p>
+  {% endif %}
   <p><a href="{% url 'bitacora:owner_document_edit' document_id=document.id %}">Edit document</a></p>
   {% if document.status != "ARCHIVED" %}
     <form method="post" action="{% url 'bitacora:owner_document_archive' document_id=document.id %}">

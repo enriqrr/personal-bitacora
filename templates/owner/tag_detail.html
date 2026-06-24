@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tag.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ tag.name }}</h1>
+  <dl>
+    <dt>Slug</dt>
+    <dd>{{ tag.slug }}</dd>
+    <dt>Visibility</dt>
+    <dd>{{ tag.visibility }}</dd>
+    <dt>Archived</dt>
+    <dd>{{ tag.is_archived }}</dd>
+  </dl>
+  {% if tag.description %}
+    <p>{{ tag.description }}</p>
+  {% endif %}
+  <p><a href="{% url 'bitacora:owner_tag_edit' slug=tag.slug %}">Edit tag</a></p>
+  {% if not tag.is_archived %}
+    <form method="post" action="{% url 'bitacora:owner_tag_archive' slug=tag.slug %}">
+      {% csrf_token %}
+      <button type="submit">Archive tag</button>
+    </form>
+  {% endif %}
+  <h2>Documents</h2>
+  {% if documents %}
+    <ul>
+      {% for document in documents %}
+        <li>
+          <a href="{% url 'bitacora:owner_document_detail' document_id=document.id %}">{{ document.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No documents use this tag yet.</p>
+  {% endif %}
+{% endblock %}

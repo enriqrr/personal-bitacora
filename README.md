@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 5: Work Sessions is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, public session pages, templates, tests, and local development documentation.
+Module 6: Tags is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, templates, tests, and local development documentation.
 
-No tag, search, upload, attachment, comment, registration, deployment, AI summary, calendar, or GitHub integration features are implemented yet.
+No search, upload, attachment, comment, registration, deployment, AI summary, calendar, GitHub integration, node tagging, or work-session tagging features are implemented yet.
 
 ## Local Setup
 
@@ -149,6 +149,24 @@ Sessions marked `PUBLIC` appear publicly only when they are not archived and the
 Public session detail pages show only references that are also publicly visible. Private or archived nodes, documents that are private, draft, needs-review, archived, or under non-public nodes, and references from non-effective objects are hidden from public visitors.
 
 Session references must belong to the same project as the session. References from another project are rejected by the service layer.
+
+## Tags
+
+Tags are owner-managed labels for flexible classification on top of the project tree. In V1, tags attach to documents only.
+
+After pulling Module 6, run migrations:
+
+```bash
+.venv/bin/python manage.py migrate
+```
+
+Log in as the owner and open `/dashboard/tags/` to create, edit, view, and archive tags. Open an owner document detail page and use `Manage document tags` to assign active tags to that document.
+
+Tags are scoped to the owner. The same owner cannot reuse a tag slug, but different owners may use the same slug.
+
+Tags can be `PUBLIC` or `PRIVATE`. Public document pages show only assigned tags that are `PUBLIC` and not archived, and only when the document itself is effectively public.
+
+Private and archived tags remain visible to the owner but are hidden publicly. Tag assignment must respect ownership: a document can only receive tags owned by the same owner as the document project.
 
 ## Local PostgreSQL
 

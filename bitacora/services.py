@@ -3,9 +3,11 @@
 from django.core.exceptions import PermissionDenied, ValidationError
 
 from .models import (
+    DocumentTag,
     NodeDocument,
     Project,
     ProjectNode,
+    Tag,
     WorkSession,
     WorkSessionDocumentReference,
     WorkSessionNodeReference,
@@ -384,3 +386,78 @@ def archive_work_session(work_session):
     work_session.is_archived = True
     work_session.save(update_fields=["is_archived", "updated_at"])
     return work_session
+
+
+def _validate_tag_slug(owner, slug, *, exclude_tag=None):
+    tags = Tag.objects.filter(owner=owner, slug=slug)
+    if exclude_tag:
+        tags = tags.exclude(pk=exclude_tag.pk)
+    if tags.exists():
+        raise ValidationError("You already have a tag with this slug.")
+
+
+def validate_tags_belong_to_owner(owner, tags):
+    for tag in tags or []:
+        if tag.owner_id != owner.id:
+            raise ValidationError("All tags must belong to the owner.")
+
+
+def validate_document_owned_by_owner(owner, document):
+    if not is_owner(owner):
+        raise PermissionDenied("Only the owner can assign tags.")
+    if document.project.owner_id != owner.id:
+        raise PermissionDenied("Only the document owner can assign tags.")
+
+
+def create_tag(
+    *,
+    owner,
+    name,
+    slug,
+    description="",
+    visibility=Tag.Visibility.PRIVATE,
+):
+    if not is_owner(owner):
+        raise PermissionDenied("Only the owner can create tags.")
+    _validate_tag_slug(owner, slug)
+
+    return Tag.objects.create(
+        owner=owner,
+        name=name,
+        slug=slug,
+        description=description,
+        visibility=visibility,
+    )
+
+
+def update_tag(tag, *, name, slug, description, visibility):
+    _validate_tag_slug(tag.owner, slug, exclude_tag=tag)
+
+    tag.name = name
+    tag.slug = slug
+    tag.description = description
+    tag.visibility = visibility
+    tag.save(update_fields=["name", "slug", "description", "visibility", "updated_at"])
+    return tag
+
+
+def archive_tag(tag):
+    tag.is_archived = True
+    tag.save(update_fields=["is_archived", "updated_at"])
+    return tag
+
+
+def set_document_tags(*, owner, document, tags):
+    validate_document_owned_by_owner(owner, document)
+    unique_tags = _unique_by_pk(tags)
+    validate_tags_belong_to_owner(owner, unique_tags)
+
+    DocumentTag.objects.filter(document=document).delete()
+    DocumentTag.objects.bulk_create(
+        [
+            DocumentTag(document=document, tag=tag)
+            for tag in unique_tags
+        ],
+        ignore_conflicts=True,
+    )
+    return document

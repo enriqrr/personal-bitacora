@@ -300,3 +300,72 @@ class WorkSessionDocumentReference(models.Model):
 
     def __str__(self):
         return f"{self.work_session} -> {self.document}"
+
+
+class Tag(models.Model):
+    class Visibility(models.TextChoices):
+        PRIVATE = "PRIVATE", "Private"
+        PUBLIC = "PUBLIC", "Public"
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="tags",
+    )
+    name = models.CharField(max_length=80)
+    slug = models.SlugField(max_length=100)
+    description = models.TextField(blank=True)
+    visibility = models.CharField(
+        max_length=20,
+        choices=Visibility.choices,
+        default=Visibility.PRIVATE,
+    )
+    is_archived = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["owner", "slug"],
+                name="unique_tag_slug_per_owner",
+            ),
+        ]
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class DocumentTag(models.Model):
+    document = models.ForeignKey(
+        NodeDocument,
+        on_delete=models.CASCADE,
+        related_name="tag_links",
+    )
+    tag = models.ForeignKey(
+        Tag,
+        on_delete=models.CASCADE,
+        related_name="document_links",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["document", "tag"],
+                name="unique_document_tag",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.document_id
+            and self.tag_id
+            and self.document.project.owner_id != self.tag.owner_id
+        ):
+            raise ValidationError("Tag owner must match document owner.")
+
+    def __str__(self):
+        return f"{self.document} -> {self.tag}"

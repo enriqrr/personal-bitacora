@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Project, ProjectNode
+from .models import NodeDocument, Project, ProjectNode
 
 
 @admin.register(Project)
@@ -25,3 +25,18 @@ class ProjectNodeAdmin(admin.ModelAdmin):
     ]
     search_fields = ["title", "slug", "description", "project__name"]
     list_filter = ["node_type", "visibility", "is_archived", "project"]
+
+
+@admin.register(NodeDocument)
+class NodeDocumentAdmin(admin.ModelAdmin):
+    list_display = [
+        "title",
+        "project",
+        "node",
+        "document_type",
+        "status",
+        "visibility",
+        "updated_at",
+    ]
+    search_fields = ["title", "slug", "body_markdown", "node__title", "project__name"]
+    list_filter = ["document_type", "status", "visibility", "project"]

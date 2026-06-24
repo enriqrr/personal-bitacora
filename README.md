@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 3: Project Tree Nodes is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, public tree/node pages, templates, tests, and local development documentation.
+Module 4: Node Documents is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, public document pages, templates, tests, and local development documentation.
 
-No document, work-session, tag, search, upload, registration, or deployment features are implemented yet.
+No work-session, tag, search, upload, attachment, comment, registration, or deployment features are implemented yet.
 
 ## Local Setup
 
@@ -106,6 +106,29 @@ Log in as the owner, open `/dashboard/projects/`, choose a project, then use the
 Nodes marked `PUBLIC` can appear on the public project tree only when the project is also `PUBLIC`, the project is not archived, the node is not archived, and every ancestor node is also public and not archived. A public child under a private or archived parent is hidden publicly.
 
 Archived nodes are hidden from public node pages but remain visible to the owner. Moving nodes is allowed only when it preserves tree integrity: a node cannot become its own parent, cannot move under one of its descendants, and cannot move under a node from another project.
+
+## Node Documents
+
+Node documents are editable Markdown notes attached to project tree nodes. They are the V1 content files for theory, specifications, pseudocode, code snippets, questions, todo lists, decisions, bug notes, deployment notes, references, and other notes.
+
+After pulling Module 4, install dependencies and run migrations:
+
+```bash
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python manage.py migrate
+```
+
+Log in as the owner, open a node detail page, then use `Create document` to add a document. Documents can be edited and archived from the owner document detail page.
+
+Available document types are `THEORY`, `SPECIFICATION`, `PSEUDOCODE`, `CODE_SNIPPET`, `QUESTION`, `TODO_LIST`, `DECISION`, `BUG_NOTE`, `DEPLOYMENT_NOTE`, `REFERENCE`, and `OTHER`.
+
+Available statuses are `DRAFT`, `ACTIVE`, `NEEDS_REVIEW`, `RESOLVED`, and `ARCHIVED`.
+
+Documents marked `PUBLIC` are visible publicly only when their status is `ACTIVE` or `RESOLVED`, their project is public and not archived, and their node is effectively public. `DRAFT` and `NEEDS_REVIEW` documents are never public in V1, even when their visibility is set to `PUBLIC`.
+
+Markdown is rendered server-side and sanitized with `bleach` before templates mark it safe. Raw Markdown is never trusted directly in templates.
+
+Archived documents are hidden publicly but remain visible to the owner. Documents are archived by status; they are not deleted.
 
 ## Local PostgreSQL
 

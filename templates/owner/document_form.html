@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}{% if document %}Edit Document{% else %}Create Document{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if document %}Edit Document{% else %}Create Document{% endif %}</h1>
+  <p>Node: {{ node.title }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save document</button>
+  </form>
+{% endblock %}

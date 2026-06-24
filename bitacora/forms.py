@@ -3,7 +3,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Project, ProjectNode
+from .models import NodeDocument, Project, ProjectNode
 
 
 class ProjectForm(forms.ModelForm):
@@ -73,3 +73,35 @@ class ProjectNodeMoveForm(forms.Form):
         super().__init__(*args, **kwargs)
         if parent_queryset is not None:
             self.fields["parent"].queryset = parent_queryset
+
+
+class NodeDocumentForm(forms.ModelForm):
+    class Meta:
+        model = NodeDocument
+        fields = [
+            "title",
+            "slug",
+            "document_type",
+            "status",
+            "visibility",
+            "body_markdown",
+        ]
+        widgets = {
+            "body_markdown": forms.Textarea(attrs={"rows": 12}),
+        }
+
+    def __init__(self, *args, node=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.node = node
+
+    def clean_slug(self):
+        slug = self.cleaned_data["slug"]
+        if not self.node:
+            return slug
+
+        documents = NodeDocument.objects.filter(node=self.node, slug=slug)
+        if self.instance.pk:
+            documents = documents.exclude(pk=self.instance.pk)
+        if documents.exists():
+            raise ValidationError("Documents inside the same node must have unique slugs.")
+        return slug

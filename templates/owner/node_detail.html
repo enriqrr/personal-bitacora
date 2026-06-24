@@ -27,6 +27,7 @@
     <p>{{ node.description }}</p>
   {% endif %}
   <p><a href="{% url 'bitacora:owner_node_create_child' node_id=node.id %}">Create child node</a></p>
+  <p><a href="{% url 'bitacora:owner_document_create' node_id=node.id %}">Create document</a></p>
   <p><a href="{% url 'bitacora:owner_node_edit' node_id=node.id %}">Edit node</a></p>
   <p><a href="{% url 'bitacora:owner_node_move' node_id=node.id %}">Move node</a></p>
   {% if not node.is_archived %}
@@ -34,5 +35,19 @@
       {% csrf_token %}
       <button type="submit">Archive node</button>
     </form>
+  {% endif %}
+  <h2>Documents</h2>
+  {% if documents %}
+    <ul>
+      {% for document in documents %}
+        <li>
+          <a href="{% url 'bitacora:owner_document_detail' document_id=document.id %}">{{ document.title }}</a>
+          <span>{{ document.status }}</span>
+          <span>{{ document.visibility }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No documents yet.</p>
   {% endif %}
 {% endblock %}

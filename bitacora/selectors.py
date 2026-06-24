@@ -1,6 +1,6 @@
 """Read/query helpers for Bitacora."""
 
-from .models import Project, ProjectNode
+from .models import NodeDocument, Project, ProjectNode
 
 
 def get_public_projects():
@@ -89,3 +89,45 @@ def get_breadcrumb_nodes(node):
         breadcrumbs.append(current)
         current = current.parent
     return list(reversed(breadcrumbs))
+
+
+def get_owner_documents_for_node(owner, node):
+    if node.project.owner_id != owner.id:
+        return NodeDocument.objects.none()
+    return NodeDocument.objects.filter(node=node)
+
+
+def get_owner_document_by_id(owner, document_id):
+    return NodeDocument.objects.filter(project__owner=owner).get(pk=document_id)
+
+
+def is_document_effectively_public(document):
+    return (
+        document.visibility == NodeDocument.Visibility.PUBLIC
+        and document.status in [NodeDocument.Status.ACTIVE, NodeDocument.Status.RESOLVED]
+        and is_node_effectively_public(document.node)
+        and document.project_id == document.node.project_id
+    )
+
+
+def get_public_documents_for_node(node):
+    if not is_node_effectively_public(node):
+        return NodeDocument.objects.none()
+    candidates = NodeDocument.objects.filter(
+        node=node,
+        visibility=NodeDocument.Visibility.PUBLIC,
+        status__in=[NodeDocument.Status.ACTIVE, NodeDocument.Status.RESOLVED],
+    ).select_related("project", "node", "node__project", "node__parent")
+    return [document for document in candidates if is_document_effectively_public(document)]
+
+
+def get_public_document_by_id(document_id):
+    document = NodeDocument.objects.select_related(
+        "project",
+        "node",
+        "node__project",
+        "node__parent",
+    ).get(pk=document_id)
+    if not is_document_effectively_public(document):
+        raise NodeDocument.DoesNotExist
+    return document

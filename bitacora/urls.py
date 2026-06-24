@@ -11,6 +11,7 @@ urlpatterns = [
     path("p/<slug:project_slug>/tree/", views.public_project_tree, name="public_project_tree"),
     path("p/<slug:slug>/", views.public_project_detail, name="public_project_detail"),
     path("public/nodes/<int:node_id>/", views.public_node_detail, name="public_node_detail"),
+    path("public/documents/<int:document_id>/", views.public_document_detail, name="public_document_detail"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("dashboard/projects/", views.owner_project_list, name="owner_project_list"),
     path("dashboard/projects/new/", views.owner_project_create, name="owner_project_create"),
@@ -24,4 +25,8 @@ urlpatterns = [
     path("dashboard/nodes/<int:node_id>/edit/", views.owner_node_edit, name="owner_node_edit"),
     path("dashboard/nodes/<int:node_id>/move/", views.owner_node_move, name="owner_node_move"),
     path("dashboard/nodes/<int:node_id>/archive/", views.owner_node_archive, name="owner_node_archive"),
+    path("dashboard/nodes/<int:node_id>/documents/new/", views.owner_document_create, name="owner_document_create"),
+    path("dashboard/documents/<int:document_id>/", views.owner_document_detail, name="owner_document_detail"),
+    path("dashboard/documents/<int:document_id>/edit/", views.owner_document_edit, name="owner_document_edit"),
+    path("dashboard/documents/<int:document_id>/archive/", views.owner_document_archive, name="owner_document_archive"),
 ]

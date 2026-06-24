@@ -2,7 +2,7 @@
 
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from .models import Project, ProjectNode
+from .models import NodeDocument, Project, ProjectNode
 from .permissions import is_owner
 
 
@@ -143,3 +143,85 @@ def archive_project_node(node):
     node.is_archived = True
     node.save(update_fields=["is_archived", "updated_at"])
     return node
+
+
+def _validate_owner_for_node(owner, node):
+    _validate_owner_for_project(owner, node.project)
+
+
+def _validate_document_project(document):
+    if document.project_id != document.node.project_id:
+        raise ValidationError("Document project must match the node project.")
+
+
+def _validate_document_slug(node, slug, *, exclude_document=None):
+    documents = NodeDocument.objects.filter(node=node, slug=slug)
+    if exclude_document:
+        documents = documents.exclude(pk=exclude_document.pk)
+    if documents.exists():
+        raise ValidationError("Documents inside the same node must have unique slugs.")
+
+
+def create_node_document(
+    *,
+    owner,
+    node,
+    title,
+    slug,
+    document_type=NodeDocument.DocumentType.OTHER,
+    status=NodeDocument.Status.DRAFT,
+    visibility=NodeDocument.Visibility.PRIVATE,
+    body_markdown="",
+):
+    _validate_owner_for_node(owner, node)
+    _validate_document_slug(node, slug)
+
+    return NodeDocument.objects.create(
+        project=node.project,
+        node=node,
+        title=title,
+        slug=slug,
+        document_type=document_type,
+        status=status,
+        visibility=visibility,
+        body_markdown=body_markdown,
+    )
+
+
+def update_node_document(
+    document,
+    *,
+    title,
+    slug,
+    document_type,
+    status,
+    visibility,
+    body_markdown,
+):
+    _validate_document_project(document)
+    _validate_document_slug(document.node, slug, exclude_document=document)
+
+    document.title = title
+    document.slug = slug
+    document.document_type = document_type
+    document.status = status
+    document.visibility = visibility
+    document.body_markdown = body_markdown
+    document.save(
+        update_fields=[
+            "title",
+            "slug",
+            "document_type",
+            "status",
+            "visibility",
+            "body_markdown",
+            "updated_at",
+        ]
+    )
+    return document
+
+
+def archive_node_document(document):
+    document.status = NodeDocument.Status.ARCHIVED
+    document.save(update_fields=["status", "updated_at"])
+    return document

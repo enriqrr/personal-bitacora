@@ -13,4 +13,16 @@
   {% if node.description %}
     <p>{{ node.description }}</p>
   {% endif %}
+  <h2>Documents</h2>
+  {% if documents %}
+    <ul>
+      {% for document in documents %}
+        <li>
+          <a href="{% url 'bitacora:public_document_detail' document_id=document.id %}">{{ document.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No public documents yet.</p>
+  {% endif %}
 {% endblock %}

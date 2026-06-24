@@ -3,11 +3,14 @@ from django.http import Http404
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 
-from .forms import ProjectForm, ProjectNodeForm, ProjectNodeMoveForm
-from .models import Project, ProjectNode
+from .forms import NodeDocumentForm, ProjectForm, ProjectNodeForm, ProjectNodeMoveForm
+from .models import NodeDocument, Project, ProjectNode
 from .permissions import owner_required
+from .rendering import render_markdown_to_safe_html
 from .selectors import (
     get_breadcrumb_nodes,
+    get_owner_document_by_id,
+    get_owner_documents_for_node,
     get_owner_node_by_id,
     get_owner_project_by_slug,
     get_owner_projects,
@@ -15,15 +18,20 @@ from .selectors import (
     get_owner_nodes_for_project,
     get_public_node_by_id,
     get_public_nodes_for_project,
+    get_public_document_by_id,
+    get_public_documents_for_node,
     get_public_project_by_slug,
     get_public_projects,
 )
 from .services import (
+    archive_node_document,
     archive_project,
     archive_project_node,
     create_project,
     create_project_node,
+    create_node_document,
     move_project_node,
+    update_node_document,
     update_project,
     update_project_node,
 )
@@ -70,10 +78,24 @@ def public_node_detail(request, node_id):
     except ProjectNode.DoesNotExist as exc:
         raise Http404("Node not found.") from exc
     breadcrumbs = get_breadcrumb_nodes(node)
+    documents = get_public_documents_for_node(node)
     return render(
         request,
         "public/node_detail.html",
-        {"node": node, "breadcrumbs": breadcrumbs},
+        {"node": node, "breadcrumbs": breadcrumbs, "documents": documents},
+    )
+
+
+def public_document_detail(request, document_id):
+    try:
+        document = get_public_document_by_id(document_id)
+    except NodeDocument.DoesNotExist as exc:
+        raise Http404("Document not found.") from exc
+    rendered_body = render_markdown_to_safe_html(document.body_markdown)
+    return render(
+        request,
+        "public/document_detail.html",
+        {"document": document, "rendered_body": rendered_body},
     )
 
 
@@ -152,10 +174,11 @@ def owner_node_detail(request, node_id):
     except ProjectNode.DoesNotExist as exc:
         raise Http404("Node not found.") from exc
     breadcrumbs = get_breadcrumb_nodes(node)
+    documents = get_owner_documents_for_node(request.user, node)
     return render(
         request,
         "owner/node_detail.html",
-        {"node": node, "breadcrumbs": breadcrumbs},
+        {"node": node, "breadcrumbs": breadcrumbs, "documents": documents},
     )
 
 
@@ -250,6 +273,85 @@ def owner_node_archive(request, node_id):
         raise Http404("Node not found.") from exc
     archive_project_node(node)
     return redirect("bitacora:owner_node_detail", node_id=node.id)
+
+
+@owner_required
+def owner_document_create(request, node_id):
+    try:
+        node = get_owner_node_by_id(request.user, node_id)
+    except ProjectNode.DoesNotExist as exc:
+        raise Http404("Node not found.") from exc
+
+    if request.method == "POST":
+        form = NodeDocumentForm(request.POST, node=node)
+        if form.is_valid():
+            try:
+                document = create_node_document(
+                    owner=request.user,
+                    node=node,
+                    **form.cleaned_data,
+                )
+                return redirect("bitacora:owner_document_detail", document_id=document.id)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = NodeDocumentForm(node=node)
+    return render(
+        request,
+        "owner/document_form.html",
+        {"form": form, "node": node, "document": None},
+    )
+
+
+@owner_required
+def owner_document_detail(request, document_id):
+    try:
+        document = get_owner_document_by_id(request.user, document_id)
+    except NodeDocument.DoesNotExist as exc:
+        raise Http404("Document not found.") from exc
+    rendered_body = render_markdown_to_safe_html(document.body_markdown)
+    return render(
+        request,
+        "owner/document_detail.html",
+        {"document": document, "rendered_body": rendered_body},
+    )
+
+
+@owner_required
+def owner_document_edit(request, document_id):
+    try:
+        document = get_owner_document_by_id(request.user, document_id)
+    except NodeDocument.DoesNotExist as exc:
+        raise Http404("Document not found.") from exc
+
+    if request.method == "POST":
+        form = NodeDocumentForm(request.POST, instance=document, node=document.node)
+        if form.is_valid():
+            try:
+                document = update_node_document(document, **form.cleaned_data)
+                return redirect("bitacora:owner_document_detail", document_id=document.id)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = NodeDocumentForm(instance=document, node=document.node)
+    return render(
+        request,
+        "owner/document_form.html",
+        {"form": form, "node": document.node, "document": document},
+    )
+
+
+@owner_required
+def owner_document_archive(request, document_id):
+    if request.method != "POST":
+        raise Http404("Document not found.")
+
+    try:
+        document = get_owner_document_by_id(request.user, document_id)
+    except NodeDocument.DoesNotExist as exc:
+        raise Http404("Document not found.") from exc
+    archive_node_document(document)
+    return redirect("bitacora:owner_document_detail", document_id=document.id)
 
 
 @owner_required

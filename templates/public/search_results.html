@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Search{% endblock %}
+
+{% block content %}
+  <h1>Search</h1>
+  <form method="get" action="{% url 'bitacora:public_search' %}">
+    <label for="public-search-query">Search</label>
+    <input id="public-search-query" type="search" name="q" value="{{ results.query }}">
+    <button type="submit">Search</button>
+  </form>
+
+  {% if not results.query %}
+    <p>Enter a search term.</p>
+  {% elif not results.has_results %}
+    <p>No results found.</p>
+  {% else %}
+    {% for group_name, group_results in results.groups.items %}
+      {% if group_results %}
+        <section>
+          <h2>{{ group_name|title }}</h2>
+          <ul>
+            {% for result in group_results %}
+              <li>
+                <a href="{{ result.url }}">{{ result.title }}</a>
+                {% if result.subtitle %}<p>{{ result.subtitle }}</p>{% endif %}
+                {% if result.snippet %}<p>{{ result.snippet }}</p>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}

@@ -10,8 +10,10 @@
       <nav aria-label="Primary navigation">
         <a href="{% url 'bitacora:home' %}">Home</a>
         <a href="{% url 'bitacora:public_project_list' %}">Projects</a>
+        <a href="{% url 'bitacora:public_search' %}">Search</a>
         {% if user.is_authenticated %}
           <a href="{% url 'bitacora:dashboard' %}">Dashboard</a>
+          <a href="{% url 'bitacora:owner_search' %}">Owner Search</a>
           <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}
             <button type="submit">Log out</button>

@@ -15,6 +15,7 @@ from .forms import (
 from .models import NodeDocument, Project, ProjectNode, Tag, WorkSession
 from .permissions import owner_required
 from .rendering import render_markdown_to_safe_html
+from .search import search_owner, search_public
 from .selectors import (
     get_breadcrumb_nodes,
     get_owner_document_by_id,
@@ -73,9 +74,20 @@ def home(request):
     return render(request, "public/home.html")
 
 
+def public_search(request):
+    results = search_public(request.GET.get("q", ""))
+    return render(request, "public/search_results.html", {"results": results})
+
+
 @owner_required
 def dashboard(request):
     return render(request, "owner/dashboard.html")
+
+
+@owner_required
+def owner_search(request):
+    results = search_owner(request.user, request.GET.get("q", ""))
+    return render(request, "owner/search_results.html", {"results": results})
 
 
 def public_project_list(request):

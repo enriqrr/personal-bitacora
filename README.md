@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 6: Tags is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, templates, tests, and local development documentation.
+Module 7: Search is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, public and owner search, templates, tests, and local development documentation.
 
-No search, upload, attachment, comment, registration, deployment, AI summary, calendar, GitHub integration, node tagging, or work-session tagging features are implemented yet.
+No upload, attachment, comment, registration, deployment, AI summary, calendar, GitHub integration, node tagging, work-session tagging, full-text index, external search engine, autocomplete, or search analytics features are implemented yet.
 
 ## Local Setup
 
@@ -167,6 +167,18 @@ Tags are scoped to the owner. The same owner cannot reuse a tag slug, but differ
 Tags can be `PUBLIC` or `PRIVATE`. Public document pages show only assigned tags that are `PUBLIC` and not archived, and only when the document itself is effectively public.
 
 Private and archived tags remain visible to the owner but are hidden publicly. Tag assignment must respect ownership: a document can only receive tags owned by the same owner as the document project.
+
+## Search
+
+Module 7 adds two search surfaces:
+
+Public search is available at `/search/` and can be used by anonymous visitors. It searches only public-safe projects, effective-public nodes, effective-public documents, and public non-archived work sessions from public non-archived projects.
+
+Owner search is available at `/dashboard/search/` and requires owner access. It searches owner-owned projects, nodes, documents, work sessions, and tags, including private and archived content.
+
+Public search is visibility-safe by design: it must not reveal private titles, private snippets, draft or needs-review documents, archived content, private tags, or public child content hidden under private ancestors.
+
+Search is simple database `icontains` matching in V1. There is no `SearchIndex` model, PostgreSQL full-text search, Elasticsearch, autocomplete, ranking service, saved search, or analytics yet.
 
 ## Local PostgreSQL
 

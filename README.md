@@ -4,7 +4,7 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 8: Deployment Hardening is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, public and owner search, stricter production settings, static file setup, deployment entrypoint, templates, tests, and documentation.
+Module 9: MVP Acceptance Review and Production Readiness Audit is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, public and owner search, stricter production settings, static file setup, deployment entrypoint, templates, tests, documentation, manual smoke checklist, and production readiness checklist.
 
 No upload, attachment, comment, registration, provider deployment, AI summary, calendar, GitHub integration, node tagging, work-session tagging, full-text index, external search engine, autocomplete, or search analytics features are implemented yet.
 
@@ -253,3 +253,17 @@ docker compose down
 ```
 
 Docker is optional for tests. The local settings can fall back to SQLite when `DATABASE_URL` is not set.
+
+## MVP Acceptance Audit
+
+Module 9 adds an audit checkpoint without adding new product models or migrations.
+
+Audit documentation lives in:
+
+* `docs/MVP_ACCEPTANCE_AUDIT.md`
+* `docs/MANUAL_SMOKE_TEST_CHECKLIST.md`
+* `docs/PRODUCTION_READINESS_CHECKLIST.md`
+
+The audit confirms the MVP boundaries: anonymous users can read only public-safe content, owner routes require owner access, Markdown is sanitized before trusted rendering, public search does not leak private content, and production settings require explicit environment configuration.
+
+Focused canary tests cover cross-module public visibility, owner route protection, public search leakage, Markdown sanitization, and production settings loading. Future work remains operational: provider deployment, CI/CD, monitoring, automated backups, rate limiting, 2FA/passkeys, and richer security hardening.

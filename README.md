@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 7: Search is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, public and owner search, templates, tests, and local development documentation.
+Module 8: Deployment Hardening is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, owner-managed document tags, public and owner search, stricter production settings, static file setup, deployment entrypoint, templates, tests, and documentation.
 
-No upload, attachment, comment, registration, deployment, AI summary, calendar, GitHub integration, node tagging, work-session tagging, full-text index, external search engine, autocomplete, or search analytics features are implemented yet.
+No upload, attachment, comment, registration, provider deployment, AI summary, calendar, GitHub integration, node tagging, work-session tagging, full-text index, external search engine, autocomplete, or search analytics features are implemented yet.
 
 ## Local Setup
 
@@ -179,6 +179,58 @@ Owner search is available at `/dashboard/search/` and requires owner access. It 
 Public search is visibility-safe by design: it must not reveal private titles, private snippets, draft or needs-review documents, archived content, private tags, or public child content hidden under private ancestors.
 
 Search is simple database `icontains` matching in V1. There is no `SearchIndex` model, PostgreSQL full-text search, Elasticsearch, autocomplete, ranking service, saved search, or analytics yet.
+
+## Deployment Hardening
+
+Module 8 keeps local setup unchanged, but production should use `config.settings.production` and real environment variables.
+
+Required production configuration:
+
+```bash
+DJANGO_SETTINGS_MODULE=config.settings.production
+SECRET_KEY=<strong-random-secret>
+DATABASE_URL=postgres://...
+ALLOWED_HOSTS=example.com,www.example.com
+CSRF_TRUSTED_ORIGINS=https://example.com,https://www.example.com
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+SECURE_HSTS_SECONDS=31536000
+```
+
+Production uses PostgreSQL through `DATABASE_URL`. `SECRET_KEY` and `DATABASE_URL` are required in production; there is no production fallback secret or SQLite database.
+
+Before deploying:
+
+```bash
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python manage.py check
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py collectstatic --noinput
+.venv/bin/python manage.py createsuperuser
+```
+
+Use a strong owner password. There is no public signup route.
+
+Static files are collected into `staticfiles/` and served by WhiteNoise in production. The collected output is ignored by Git and should not be committed.
+
+Deploy with a standard WSGI process such as:
+
+```bash
+gunicorn config.wsgi:application
+```
+
+A minimal `Procfile` is included for generic web process declaration.
+
+Operational reminders:
+
+* configure `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` for the real domains;
+* run migrations during deploy;
+* run `collectstatic` during deploy;
+* create the owner with `createsuperuser`;
+* back up the database before major changes.
+
+Still out of scope: actual provider deployment, DNS/TLS provisioning, CI/CD, automated backups, monitoring/Sentry, rate limiting, 2FA/passkeys, IP allowlisting, CSP, object storage, Celery/Redis, and production Docker orchestration.
 
 ## Local PostgreSQL
 

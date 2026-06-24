@@ -1,0 +1,14 @@
+from .base import *  # noqa: F403
+
+SECRET_KEY = env("SECRET_KEY")  # noqa: F405
+DEBUG = env("DEBUG", default=False)  # noqa: F405
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")  # noqa: F405
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS", default=[])  # noqa: F405
+DATABASES = {"default": env.db("DATABASE_URL")}  # noqa: F405
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+X_FRAME_OPTIONS = "DENY"

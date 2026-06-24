@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}{% if node %}Edit Node{% else %}Create Node{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if node %}Edit Node{% else %}Create Node{% endif %}</h1>
+  {% if parent %}
+    <p>Parent: {{ parent.title }}</p>
+  {% endif %}
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save node</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ node.title }}{% endblock %}
+
+{% block content %}
+  <nav aria-label="Breadcrumbs">
+    {% for breadcrumb in breadcrumbs %}
+      <a href="{% url 'bitacora:public_node_detail' node_id=breadcrumb.id %}">{{ breadcrumb.title }}</a>
+    {% endfor %}
+  </nav>
+  <h1>{{ node.title }}</h1>
+  <p>{{ node.node_type }}</p>
+  {% if node.description %}
+    <p>{{ node.description }}</p>
+  {% endif %}
+{% endblock %}

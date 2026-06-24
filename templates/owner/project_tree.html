@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} Tree{% endblock %}
+
+{% block content %}
+  <h1>{{ project.name }} Tree</h1>
+  <p><a href="{% url 'bitacora:owner_node_create_root' project_slug=project.slug %}">Create root node</a></p>
+  {% if nodes %}
+    <ul>
+      {% for node in nodes %}
+        <li>
+          <a href="{% url 'bitacora:owner_node_detail' node_id=node.id %}">{{ node.title }}</a>
+          <span>{{ node.node_type }}</span>
+          <span>{{ node.visibility }}</span>
+          {% if node.is_archived %}<span>ARCHIVED</span>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No nodes yet.</p>
+  {% endif %}
+{% endblock %}

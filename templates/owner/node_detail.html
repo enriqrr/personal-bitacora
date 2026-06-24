@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ node.title }}{% endblock %}
+
+{% block content %}
+  <nav aria-label="Breadcrumbs">
+    {% for breadcrumb in breadcrumbs %}
+      <a href="{% url 'bitacora:owner_node_detail' node_id=breadcrumb.id %}">{{ breadcrumb.title }}</a>
+    {% endfor %}
+  </nav>
+  <h1>{{ node.title }}</h1>
+  <dl>
+    <dt>Project</dt>
+    <dd>{{ node.project.name }}</dd>
+    <dt>Slug</dt>
+    <dd>{{ node.slug }}</dd>
+    <dt>Type</dt>
+    <dd>{{ node.node_type }}</dd>
+    <dt>Visibility</dt>
+    <dd>{{ node.visibility }}</dd>
+    <dt>Position</dt>
+    <dd>{{ node.position }}</dd>
+    <dt>Archived</dt>
+    <dd>{{ node.is_archived }}</dd>
+  </dl>
+  {% if node.description %}
+    <p>{{ node.description }}</p>
+  {% endif %}
+  <p><a href="{% url 'bitacora:owner_node_create_child' node_id=node.id %}">Create child node</a></p>
+  <p><a href="{% url 'bitacora:owner_node_edit' node_id=node.id %}">Edit node</a></p>
+  <p><a href="{% url 'bitacora:owner_node_move' node_id=node.id %}">Move node</a></p>
+  {% if not node.is_archived %}
+    <form method="post" action="{% url 'bitacora:owner_node_archive' node_id=node.id %}">
+      {% csrf_token %}
+      <button type="submit">Archive node</button>
+    </form>
+  {% endif %}
+{% endblock %}

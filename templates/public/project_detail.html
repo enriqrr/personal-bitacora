@@ -7,4 +7,5 @@
   {% if project.description %}
     <p>{{ project.description }}</p>
   {% endif %}
+  <p><a href="{% url 'bitacora:public_project_tree' project_slug=project.slug %}">View project tree</a></p>
 {% endblock %}

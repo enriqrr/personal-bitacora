@@ -3,7 +3,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Project
+from .models import Project, ProjectNode
 
 
 class ProjectForm(forms.ModelForm):
@@ -29,3 +29,47 @@ class ProjectForm(forms.ModelForm):
         if projects.exists():
             raise ValidationError("You already have a project with this slug.")
         return slug
+
+
+class ProjectNodeForm(forms.ModelForm):
+    class Meta:
+        model = ProjectNode
+        fields = ["title", "slug", "description", "node_type", "visibility", "position"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def __init__(self, *args, project=None, parent=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.project = project
+        self.parent = parent
+
+    def clean_slug(self):
+        slug = self.cleaned_data["slug"]
+        if not self.project:
+            return slug
+
+        nodes = ProjectNode.objects.filter(
+            project=self.project,
+            parent=self.parent,
+            slug=slug,
+        )
+        if self.instance.pk:
+            nodes = nodes.exclude(pk=self.instance.pk)
+        if nodes.exists():
+            raise ValidationError("Sibling nodes must have unique slugs.")
+        return slug
+
+
+class ProjectNodeMoveForm(forms.Form):
+    parent = forms.ModelChoiceField(
+        queryset=ProjectNode.objects.none(),
+        required=False,
+        empty_label="Root node",
+    )
+    position = forms.IntegerField(min_value=0, initial=0)
+
+    def __init__(self, *args, parent_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if parent_queryset is not None:
+            self.fields["parent"].queryset = parent_queryset

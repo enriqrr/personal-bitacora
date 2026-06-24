@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 2: Projects is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, public project list/detail pages, templates, tests, and local development documentation.
+Module 3: Project Tree Nodes is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, public tree/node pages, templates, tests, and local development documentation.
 
-No tree node, document, work-session, tag, search, upload, registration, or deployment features are implemented yet.
+No document, work-session, tag, search, upload, registration, or deployment features are implemented yet.
 
 ## Local Setup
 
@@ -79,7 +79,7 @@ Log in at `/accounts/login/`, then access `/dashboard/`.
 
 ## Projects
 
-After pulling Module 2, run migrations:
+After pulling Module 2 or later, run migrations:
 
 ```bash
 .venv/bin/python manage.py migrate
@@ -90,6 +90,22 @@ Create or log in as the owner superuser, then open `/dashboard/projects/` to cre
 Projects marked `PUBLIC` appear on `/projects/` and can be viewed at `/p/<slug>/` as long as they are not archived. Projects marked `PRIVATE` are visible only in the owner dashboard.
 
 Archived projects are hidden from public project pages but remain visible to the owner. Projects are archived by status; they are not deleted.
+
+## Project Tree Nodes
+
+Project nodes are hierarchical compartments inside a project. They can represent areas, modules, features, screens, technical topics, research topics, deployment topics, testing topics, or other project structure.
+
+After pulling Module 3, run migrations:
+
+```bash
+.venv/bin/python manage.py migrate
+```
+
+Log in as the owner, open `/dashboard/projects/`, choose a project, then use the tree links to create root nodes and child nodes. Root nodes start a tree. Child nodes are created from an existing node detail page.
+
+Nodes marked `PUBLIC` can appear on the public project tree only when the project is also `PUBLIC`, the project is not archived, the node is not archived, and every ancestor node is also public and not archived. A public child under a private or archived parent is hidden publicly.
+
+Archived nodes are hidden from public node pages but remain visible to the owner. Moving nodes is allowed only when it preserves tree integrity: a node cannot become its own parent, cannot move under one of its descendants, and cannot move under a node from another project.
 
 ## Local PostgreSQL
 

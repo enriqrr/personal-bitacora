@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} Tree{% endblock %}
+
+{% block content %}
+  <h1>{{ project.name }} Tree</h1>
+  {% if nodes %}
+    <ul>
+      {% for node in nodes %}
+        <li>
+          <a href="{% url 'bitacora:public_node_detail' node_id=node.id %}">{{ node.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No public nodes yet.</p>
+  {% endif %}
+{% endblock %}

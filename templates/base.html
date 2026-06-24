@@ -9,6 +9,7 @@
     <header>
       <nav aria-label="Primary navigation">
         <a href="{% url 'bitacora:home' %}">Home</a>
+        <a href="{% url 'bitacora:public_project_list' %}">Projects</a>
         {% if user.is_authenticated %}
           <a href="{% url 'bitacora:dashboard' %}">Dashboard</a>
           <form method="post" action="{% url 'logout' %}">

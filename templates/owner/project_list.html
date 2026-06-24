@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Owner Projects{% endblock %}
+
+{% block content %}
+  <h1>Owner Projects</h1>
+  <p><a href="{% url 'bitacora:owner_project_create' %}">Create project</a></p>
+  {% if projects %}
+    <ul>
+      {% for project in projects %}
+        <li>
+          <a href="{% url 'bitacora:owner_project_detail' slug=project.slug %}">{{ project.name }}</a>
+          <span>{{ project.status }}</span>
+          <span>{{ project.visibility }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No projects yet.</p>
+  {% endif %}
+{% endblock %}

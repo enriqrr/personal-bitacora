@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 1: Authentication and Access Split is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, templates, tests, and local development documentation.
+Module 2: Projects is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, public project list/detail pages, templates, tests, and local development documentation.
 
-No project, document, work-session, tag, search, upload, registration, or deployment features are implemented yet.
+No tree node, document, work-session, tag, search, upload, registration, or deployment features are implemented yet.
 
 ## Local Setup
 
@@ -76,6 +76,20 @@ Start the server:
 ```
 
 Log in at `/accounts/login/`, then access `/dashboard/`.
+
+## Projects
+
+After pulling Module 2, run migrations:
+
+```bash
+.venv/bin/python manage.py migrate
+```
+
+Create or log in as the owner superuser, then open `/dashboard/projects/` to create a project.
+
+Projects marked `PUBLIC` appear on `/projects/` and can be viewed at `/p/<slug>/` as long as they are not archived. Projects marked `PRIVATE` are visible only in the owner dashboard.
+
+Archived projects are hidden from public project pages but remain visible to the owner. Projects are archived by status; they are not deleted.
 
 ## Local PostgreSQL
 

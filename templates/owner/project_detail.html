@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ project.name }}</h1>
+  <dl>
+    <dt>Slug</dt>
+    <dd>{{ project.slug }}</dd>
+    <dt>Status</dt>
+    <dd>{{ project.status }}</dd>
+    <dt>Visibility</dt>
+    <dd>{{ project.visibility }}</dd>
+  </dl>
+  {% if project.description %}
+    <p>{{ project.description }}</p>
+  {% endif %}
+  <p><a href="{% url 'bitacora:owner_project_edit' slug=project.slug %}">Edit project</a></p>
+  {% if project.status != "ARCHIVED" %}
+    <form method="post" action="{% url 'bitacora:owner_project_archive' slug=project.slug %}">
+      {% csrf_token %}
+      <button type="submit">Archive project</button>
+    </form>
+  {% endif %}
+{% endblock %}

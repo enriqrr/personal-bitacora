@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ project.name }}</h1>
+  {% if project.description %}
+    <p>{{ project.description }}</p>
+  {% endif %}
+{% endblock %}

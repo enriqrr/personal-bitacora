@@ -8,4 +8,5 @@
     <p>{{ project.description }}</p>
   {% endif %}
   <p><a href="{% url 'bitacora:public_project_tree' project_slug=project.slug %}">View project tree</a></p>
+  <p><a href="{% url 'bitacora:public_session_list' project_slug=project.slug %}">View work sessions</a></p>
 {% endblock %}

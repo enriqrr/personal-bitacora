@@ -192,3 +192,111 @@ class NodeDocument(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class WorkSession(models.Model):
+    class Visibility(models.TextChoices):
+        PRIVATE = "PRIVATE", "Private"
+        PUBLIC = "PUBLIC", "Public"
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name="work_sessions",
+    )
+    title = models.CharField(max_length=200)
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True, blank=True)
+    visibility = models.CharField(
+        max_length=20,
+        choices=Visibility.choices,
+        default=Visibility.PRIVATE,
+    )
+    is_archived = models.BooleanField(default=False)
+    summary = models.TextField(blank=True)
+    goals = models.TextField(blank=True)
+    work_done = models.TextField(blank=True)
+    decisions_made = models.TextField(blank=True)
+    doubts_opened = models.TextField(blank=True)
+    next_actions = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-started_at", "-created_at"]
+
+    def clean(self):
+        super().clean()
+        if self.ended_at and self.ended_at < self.started_at:
+            raise ValidationError("Session end time must be after or equal to start time.")
+
+    def __str__(self):
+        return self.title
+
+
+class WorkSessionNodeReference(models.Model):
+    work_session = models.ForeignKey(
+        WorkSession,
+        on_delete=models.CASCADE,
+        related_name="node_references",
+    )
+    node = models.ForeignKey(
+        ProjectNode,
+        on_delete=models.CASCADE,
+        related_name="work_session_references",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["work_session", "node"],
+                name="unique_work_session_node_reference",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.work_session_id
+            and self.node_id
+            and self.work_session.project_id != self.node.project_id
+        ):
+            raise ValidationError("Referenced node must belong to the session project.")
+
+    def __str__(self):
+        return f"{self.work_session} -> {self.node}"
+
+
+class WorkSessionDocumentReference(models.Model):
+    work_session = models.ForeignKey(
+        WorkSession,
+        on_delete=models.CASCADE,
+        related_name="document_references",
+    )
+    document = models.ForeignKey(
+        NodeDocument,
+        on_delete=models.CASCADE,
+        related_name="work_session_references",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["work_session", "document"],
+                name="unique_work_session_document_reference",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.work_session_id
+            and self.document_id
+            and self.work_session.project_id != self.document.project_id
+        ):
+            raise ValidationError("Referenced document must belong to the session project.")
+
+    def __str__(self):
+        return f"{self.work_session} -> {self.document}"

@@ -4,9 +4,9 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 4: Node Documents is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, public document pages, templates, tests, and local development documentation.
+Module 5: Work Sessions is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, project create/edit/archive flows, hierarchical project nodes, editable node documents, chronological work-session logs, public session pages, templates, tests, and local development documentation.
 
-No work-session, tag, search, upload, attachment, comment, registration, or deployment features are implemented yet.
+No tag, search, upload, attachment, comment, registration, deployment, AI summary, calendar, or GitHub integration features are implemented yet.
 
 ## Local Setup
 
@@ -129,6 +129,26 @@ Documents marked `PUBLIC` are visible publicly only when their status is `ACTIVE
 Markdown is rendered server-side and sanitized with `bleach` before templates mark it safe. Raw Markdown is never trusted directly in templates.
 
 Archived documents are hidden publicly but remain visible to the owner. Documents are archived by status; they are not deleted.
+
+## Work Sessions
+
+Work sessions are chronological logs for a project work block. They record the session title, start and optional end time, summary, goals, work done, decisions made, doubts opened, and next actions.
+
+After pulling Module 5, run migrations:
+
+```bash
+.venv/bin/python manage.py migrate
+```
+
+Log in as the owner, open a project detail page, then use the work-session links to create, edit, view, and archive sessions.
+
+Sessions belong to a single project. They can reference nodes and node documents from that same project so chronological work history can connect back to the project knowledge tree.
+
+Sessions marked `PUBLIC` appear publicly only when they are not archived and their project is public and not archived. Private and archived sessions are hidden publicly but remain visible to the owner.
+
+Public session detail pages show only references that are also publicly visible. Private or archived nodes, documents that are private, draft, needs-review, archived, or under non-public nodes, and references from non-effective objects are hidden from public visitors.
+
+Session references must belong to the same project as the session. References from another project are rejected by the service layer.
 
 ## Local PostgreSQL
 

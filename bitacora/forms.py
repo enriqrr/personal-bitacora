@@ -3,7 +3,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import NodeDocument, Project, ProjectNode
+from .models import NodeDocument, Project, ProjectNode, WorkSession
 
 
 class ProjectForm(forms.ModelForm):
@@ -105,3 +105,65 @@ class NodeDocumentForm(forms.ModelForm):
         if documents.exists():
             raise ValidationError("Documents inside the same node must have unique slugs.")
         return slug
+
+
+class WorkSessionForm(forms.ModelForm):
+    referenced_nodes = forms.ModelMultipleChoiceField(
+        queryset=ProjectNode.objects.none(),
+        required=False,
+    )
+    referenced_documents = forms.ModelMultipleChoiceField(
+        queryset=NodeDocument.objects.none(),
+        required=False,
+    )
+
+    class Meta:
+        model = WorkSession
+        fields = [
+            "title",
+            "started_at",
+            "ended_at",
+            "visibility",
+            "summary",
+            "goals",
+            "work_done",
+            "decisions_made",
+            "doubts_opened",
+            "next_actions",
+            "referenced_nodes",
+            "referenced_documents",
+        ]
+        widgets = {
+            "started_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "ended_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "summary": forms.Textarea(attrs={"rows": 3}),
+            "goals": forms.Textarea(attrs={"rows": 3}),
+            "work_done": forms.Textarea(attrs={"rows": 4}),
+            "decisions_made": forms.Textarea(attrs={"rows": 3}),
+            "doubts_opened": forms.Textarea(attrs={"rows": 3}),
+            "next_actions": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, project=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.project = project
+        if project is not None:
+            self.fields["referenced_nodes"].queryset = ProjectNode.objects.filter(project=project)
+            self.fields["referenced_documents"].queryset = NodeDocument.objects.filter(project=project)
+        if self.instance.pk:
+            self.fields["referenced_nodes"].initial = self.instance.node_references.values_list(
+                "node_id",
+                flat=True,
+            )
+            self.fields["referenced_documents"].initial = self.instance.document_references.values_list(
+                "document_id",
+                flat=True,
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        started_at = cleaned_data.get("started_at")
+        ended_at = cleaned_data.get("ended_at")
+        if started_at and ended_at and ended_at < started_at:
+            raise ValidationError("Session end time must be after or equal to start time.")
+        return cleaned_data

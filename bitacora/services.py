@@ -2,7 +2,14 @@
 
 from django.core.exceptions import PermissionDenied, ValidationError
 
-from .models import NodeDocument, Project, ProjectNode
+from .models import (
+    NodeDocument,
+    Project,
+    ProjectNode,
+    WorkSession,
+    WorkSessionDocumentReference,
+    WorkSessionNodeReference,
+)
 from .permissions import is_owner
 
 
@@ -225,3 +232,155 @@ def archive_node_document(document):
     document.status = NodeDocument.Status.ARCHIVED
     document.save(update_fields=["status", "updated_at"])
     return document
+
+
+def validate_work_session_time_range(started_at, ended_at):
+    if ended_at and ended_at < started_at:
+        raise ValidationError("Session end time must be after or equal to start time.")
+
+
+def validate_session_node_references(project, nodes):
+    for node in nodes or []:
+        if node.project_id != project.id:
+            raise ValidationError("Referenced nodes must belong to the session project.")
+
+
+def validate_session_document_references(project, documents):
+    for document in documents or []:
+        if document.project_id != project.id:
+            raise ValidationError("Referenced documents must belong to the session project.")
+
+
+def _unique_by_pk(items):
+    unique = []
+    seen = set()
+    for item in items or []:
+        if item.pk not in seen:
+            unique.append(item)
+            seen.add(item.pk)
+    return unique
+
+
+def _replace_work_session_references(work_session, *, referenced_nodes, referenced_documents):
+    nodes = _unique_by_pk(referenced_nodes)
+    documents = _unique_by_pk(referenced_documents)
+
+    WorkSessionNodeReference.objects.filter(work_session=work_session).delete()
+    WorkSessionDocumentReference.objects.filter(work_session=work_session).delete()
+
+    WorkSessionNodeReference.objects.bulk_create(
+        [
+            WorkSessionNodeReference(work_session=work_session, node=node)
+            for node in nodes
+        ],
+        ignore_conflicts=True,
+    )
+    WorkSessionDocumentReference.objects.bulk_create(
+        [
+            WorkSessionDocumentReference(work_session=work_session, document=document)
+            for document in documents
+        ],
+        ignore_conflicts=True,
+    )
+
+
+def create_work_session(
+    *,
+    owner,
+    project,
+    title,
+    started_at,
+    ended_at=None,
+    visibility=WorkSession.Visibility.PRIVATE,
+    summary="",
+    goals="",
+    work_done="",
+    decisions_made="",
+    doubts_opened="",
+    next_actions="",
+    referenced_nodes=None,
+    referenced_documents=None,
+):
+    _validate_owner_for_project(owner, project)
+    validate_work_session_time_range(started_at, ended_at)
+    validate_session_node_references(project, referenced_nodes)
+    validate_session_document_references(project, referenced_documents)
+
+    work_session = WorkSession.objects.create(
+        project=project,
+        title=title,
+        started_at=started_at,
+        ended_at=ended_at,
+        visibility=visibility,
+        summary=summary,
+        goals=goals,
+        work_done=work_done,
+        decisions_made=decisions_made,
+        doubts_opened=doubts_opened,
+        next_actions=next_actions,
+    )
+    _replace_work_session_references(
+        work_session,
+        referenced_nodes=referenced_nodes,
+        referenced_documents=referenced_documents,
+    )
+    return work_session
+
+
+def update_work_session(
+    work_session,
+    *,
+    title,
+    started_at,
+    ended_at,
+    visibility,
+    summary,
+    goals,
+    work_done,
+    decisions_made,
+    doubts_opened,
+    next_actions,
+    referenced_nodes=None,
+    referenced_documents=None,
+):
+    validate_work_session_time_range(started_at, ended_at)
+    validate_session_node_references(work_session.project, referenced_nodes)
+    validate_session_document_references(work_session.project, referenced_documents)
+
+    work_session.title = title
+    work_session.started_at = started_at
+    work_session.ended_at = ended_at
+    work_session.visibility = visibility
+    work_session.summary = summary
+    work_session.goals = goals
+    work_session.work_done = work_done
+    work_session.decisions_made = decisions_made
+    work_session.doubts_opened = doubts_opened
+    work_session.next_actions = next_actions
+    work_session.save(
+        update_fields=[
+            "title",
+            "started_at",
+            "ended_at",
+            "visibility",
+            "summary",
+            "goals",
+            "work_done",
+            "decisions_made",
+            "doubts_opened",
+            "next_actions",
+            "updated_at",
+        ]
+    )
+    _replace_work_session_references(
+        work_session,
+        referenced_nodes=referenced_nodes,
+        referenced_documents=referenced_documents,
+    )
+    return work_session
+
+
+def archive_work_session(work_session):
+    work_session.is_archived = True
+    work_session.save(update_fields=["is_archived", "updated_at"])
+    return work_session

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ work_session.title }}{% endblock %}
+
+{% block content %}
+  <h1>{{ work_session.title }}</h1>
+  <dl>
+    <dt>Project</dt>
+    <dd>{{ work_session.project.name }}</dd>
+    <dt>Started</dt>
+    <dd>{{ work_session.started_at }}</dd>
+    {% if work_session.ended_at %}
+      <dt>Ended</dt>
+      <dd>{{ work_session.ended_at }}</dd>
+    {% endif %}
+    <dt>Visibility</dt>
+    <dd>{{ work_session.visibility }}</dd>
+    <dt>Archived</dt>
+    <dd>{{ work_session.is_archived }}</dd>
+  </dl>
+  {% if work_session.summary %}<section><h2>Summary</h2><p>{{ work_session.summary }}</p></section>{% endif %}
+  {% if work_session.goals %}<section><h2>Goals</h2><p>{{ work_session.goals }}</p></section>{% endif %}
+  {% if work_session.work_done %}<section><h2>Work Done</h2><p>{{ work_session.work_done }}</p></section>{% endif %}
+  {% if work_session.decisions_made %}<section><h2>Decisions Made</h2><p>{{ work_session.decisions_made }}</p></section>{% endif %}
+  {% if work_session.doubts_opened %}<section><h2>Doubts Opened</h2><p>{{ work_session.doubts_opened }}</p></section>{% endif %}
+  {% if work_session.next_actions %}<section><h2>Next Actions</h2><p>{{ work_session.next_actions }}</p></section>{% endif %}
+
+  <h2>Referenced Nodes</h2>
+  {% if work_session.node_references.all %}
+    <ul>
+      {% for reference in work_session.node_references.all %}
+        <li><a href="{% url 'bitacora:owner_node_detail' node_id=reference.node.id %}">{{ reference.node.title }}</a></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No node references.</p>
+  {% endif %}
+
+  <h2>Referenced Documents</h2>
+  {% if work_session.document_references.all %}
+    <ul>
+      {% for reference in work_session.document_references.all %}
+        <li><a href="{% url 'bitacora:owner_document_detail' document_id=reference.document.id %}">{{ reference.document.title }}</a></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No document references.</p>
+  {% endif %}
+
+  <p><a href="{% url 'bitacora:owner_session_edit' session_id=work_session.id %}">Edit session</a></p>
+  {% if not work_session.is_archived %}
+    <form method="post" action="{% url 'bitacora:owner_session_archive' session_id=work_session.id %}">
+      {% csrf_token %}
+      <button type="submit">Archive session</button>
+    </form>
+  {% endif %}
+{% endblock %}

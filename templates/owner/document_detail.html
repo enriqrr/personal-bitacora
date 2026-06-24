@@ -28,4 +28,16 @@
       <button type="submit">Archive document</button>
     </form>
   {% endif %}
+  <h2>Referencing Sessions</h2>
+  {% if sessions %}
+    <ul>
+      {% for session in sessions %}
+        <li>
+          <a href="{% url 'bitacora:owner_session_detail' session_id=session.id %}">{{ session.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No sessions reference this document yet.</p>
+  {% endif %}
 {% endblock %}

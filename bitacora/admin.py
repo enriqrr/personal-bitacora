@@ -2,7 +2,14 @@
 
 from django.contrib import admin
 
-from .models import NodeDocument, Project, ProjectNode
+from .models import (
+    NodeDocument,
+    Project,
+    ProjectNode,
+    WorkSession,
+    WorkSessionDocumentReference,
+    WorkSessionNodeReference,
+)
 
 
 @admin.register(Project)
@@ -40,3 +47,37 @@ class NodeDocumentAdmin(admin.ModelAdmin):
     ]
     search_fields = ["title", "slug", "body_markdown", "node__title", "project__name"]
     list_filter = ["document_type", "status", "visibility", "project"]
+
+
+@admin.register(WorkSession)
+class WorkSessionAdmin(admin.ModelAdmin):
+    list_display = [
+        "title",
+        "project",
+        "visibility",
+        "is_archived",
+        "started_at",
+        "ended_at",
+        "updated_at",
+    ]
+    search_fields = [
+        "title",
+        "summary",
+        "goals",
+        "work_done",
+        "decisions_made",
+        "doubts_opened",
+        "next_actions",
+        "project__name",
+    ]
+    list_filter = ["visibility", "is_archived", "project", "started_at"]
+
+
+@admin.register(WorkSessionNodeReference)
+class WorkSessionNodeReferenceAdmin(admin.ModelAdmin):
+    list_display = ["work_session", "node", "created_at"]
+
+
+@admin.register(WorkSessionDocumentReference)
+class WorkSessionDocumentReferenceAdmin(admin.ModelAdmin):
+    list_display = ["work_session", "document", "created_at"]

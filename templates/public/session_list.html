@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} Work Sessions{% endblock %}
+
+{% block content %}
+  <h1>{{ project.name }} Work Sessions</h1>
+  {% if sessions %}
+    <ul>
+      {% for session in sessions %}
+        <li>
+          <a href="{% url 'bitacora:public_session_detail' session_id=session.id %}">{{ session.title }}</a>
+          <span>{{ session.started_at }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No public work sessions yet.</p>
+  {% endif %}
+{% endblock %}

@@ -3,8 +3,14 @@ from django.http import Http404
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 
-from .forms import NodeDocumentForm, ProjectForm, ProjectNodeForm, ProjectNodeMoveForm
-from .models import NodeDocument, Project, ProjectNode
+from .forms import (
+    NodeDocumentForm,
+    ProjectForm,
+    ProjectNodeForm,
+    ProjectNodeMoveForm,
+    WorkSessionForm,
+)
+from .models import NodeDocument, Project, ProjectNode, WorkSession
 from .permissions import owner_required
 from .rendering import render_markdown_to_safe_html
 from .selectors import (
@@ -15,25 +21,36 @@ from .selectors import (
     get_owner_project_by_slug,
     get_owner_projects,
     get_owner_root_nodes_for_project,
+    get_owner_session_by_id,
+    get_owner_sessions_for_project,
+    get_owner_sessions_referencing_document,
+    get_owner_sessions_referencing_node,
     get_owner_nodes_for_project,
     get_public_node_by_id,
     get_public_nodes_for_project,
     get_public_document_by_id,
     get_public_documents_for_node,
+    get_public_document_references_for_session,
     get_public_project_by_slug,
     get_public_projects,
+    get_public_session_by_id,
+    get_public_node_references_for_session,
+    get_public_sessions_for_project,
 )
 from .services import (
     archive_node_document,
     archive_project,
     archive_project_node,
+    archive_work_session,
     create_project,
     create_project_node,
     create_node_document,
+    create_work_session,
     move_project_node,
     update_node_document,
     update_project,
     update_project_node,
+    update_work_session,
 )
 
 
@@ -61,6 +78,37 @@ def public_project_detail(request, slug):
     except Project.DoesNotExist as exc:
         raise Http404("Project not found.") from exc
     return render(request, "public/project_detail.html", {"project": project})
+
+
+def public_session_list(request, project_slug):
+    try:
+        project = get_public_project_by_slug(project_slug)
+    except Project.DoesNotExist as exc:
+        raise Http404("Project not found.") from exc
+    sessions = get_public_sessions_for_project(project)
+    return render(
+        request,
+        "public/session_list.html",
+        {"project": project, "sessions": sessions},
+    )
+
+
+def public_session_detail(request, session_id):
+    try:
+        work_session = get_public_session_by_id(session_id)
+    except WorkSession.DoesNotExist as exc:
+        raise Http404("Session not found.") from exc
+    node_references = get_public_node_references_for_session(work_session)
+    document_references = get_public_document_references_for_session(work_session)
+    return render(
+        request,
+        "public/session_detail.html",
+        {
+            "work_session": work_session,
+            "node_references": node_references,
+            "document_references": document_references,
+        },
+    )
 
 
 def public_project_tree(request, project_slug):
@@ -127,6 +175,98 @@ def owner_project_detail(request, slug):
 
 
 @owner_required
+def owner_session_list(request, project_slug):
+    try:
+        project = get_owner_project_by_slug(request.user, project_slug)
+    except Project.DoesNotExist as exc:
+        raise Http404("Project not found.") from exc
+    sessions = get_owner_sessions_for_project(request.user, project)
+    return render(
+        request,
+        "owner/session_list.html",
+        {"project": project, "sessions": sessions},
+    )
+
+
+@owner_required
+def owner_session_create(request, project_slug):
+    try:
+        project = get_owner_project_by_slug(request.user, project_slug)
+    except Project.DoesNotExist as exc:
+        raise Http404("Project not found.") from exc
+
+    if request.method == "POST":
+        form = WorkSessionForm(request.POST, project=project)
+        if form.is_valid():
+            try:
+                work_session = create_work_session(
+                    owner=request.user,
+                    project=project,
+                    **form.cleaned_data,
+                )
+                return redirect("bitacora:owner_session_detail", session_id=work_session.id)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = WorkSessionForm(project=project)
+    return render(
+        request,
+        "owner/session_form.html",
+        {"form": form, "project": project, "work_session": None},
+    )
+
+
+@owner_required
+def owner_session_detail(request, session_id):
+    try:
+        work_session = get_owner_session_by_id(request.user, session_id)
+    except WorkSession.DoesNotExist as exc:
+        raise Http404("Session not found.") from exc
+    return render(
+        request,
+        "owner/session_detail.html",
+        {"work_session": work_session},
+    )
+
+
+@owner_required
+def owner_session_edit(request, session_id):
+    try:
+        work_session = get_owner_session_by_id(request.user, session_id)
+    except WorkSession.DoesNotExist as exc:
+        raise Http404("Session not found.") from exc
+
+    if request.method == "POST":
+        form = WorkSessionForm(request.POST, instance=work_session, project=work_session.project)
+        if form.is_valid():
+            try:
+                work_session = update_work_session(work_session, **form.cleaned_data)
+                return redirect("bitacora:owner_session_detail", session_id=work_session.id)
+            except ValidationError as exc:
+                form.add_error(None, exc)
+    else:
+        form = WorkSessionForm(instance=work_session, project=work_session.project)
+    return render(
+        request,
+        "owner/session_form.html",
+        {"form": form, "project": work_session.project, "work_session": work_session},
+    )
+
+
+@owner_required
+def owner_session_archive(request, session_id):
+    if request.method != "POST":
+        raise Http404("Session not found.")
+
+    try:
+        work_session = get_owner_session_by_id(request.user, session_id)
+    except WorkSession.DoesNotExist as exc:
+        raise Http404("Session not found.") from exc
+    archive_work_session(work_session)
+    return redirect("bitacora:owner_session_detail", session_id=work_session.id)
+
+
+@owner_required
 def owner_project_tree(request, project_slug):
     try:
         project = get_owner_project_by_slug(request.user, project_slug)
@@ -175,10 +315,16 @@ def owner_node_detail(request, node_id):
         raise Http404("Node not found.") from exc
     breadcrumbs = get_breadcrumb_nodes(node)
     documents = get_owner_documents_for_node(request.user, node)
+    sessions = get_owner_sessions_referencing_node(request.user, node)
     return render(
         request,
         "owner/node_detail.html",
-        {"node": node, "breadcrumbs": breadcrumbs, "documents": documents},
+        {
+            "node": node,
+            "breadcrumbs": breadcrumbs,
+            "documents": documents,
+            "sessions": sessions,
+        },
     )
 
 
@@ -310,10 +456,15 @@ def owner_document_detail(request, document_id):
     except NodeDocument.DoesNotExist as exc:
         raise Http404("Document not found.") from exc
     rendered_body = render_markdown_to_safe_html(document.body_markdown)
+    sessions = get_owner_sessions_referencing_document(request.user, document)
     return render(
         request,
         "owner/document_detail.html",
-        {"document": document, "rendered_body": rendered_body},
+        {
+            "document": document,
+            "rendered_body": rendered_body,
+            "sessions": sessions,
+        },
     )
 
 

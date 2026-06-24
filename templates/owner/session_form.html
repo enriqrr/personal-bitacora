@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}{% if work_session %}Edit Work Session{% else %}Create Work Session{% endif %}{% endblock %}
+
+{% block content %}
+  <h1>{% if work_session %}Edit Work Session{% else %}Create Work Session{% endif %}</h1>
+  <p>Project: {{ project.name }}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save session</button>
+  </form>
+{% endblock %}

@@ -50,4 +50,16 @@
   {% else %}
     <p>No documents yet.</p>
   {% endif %}
+  <h2>Referencing Sessions</h2>
+  {% if sessions %}
+    <ul>
+      {% for session in sessions %}
+        <li>
+          <a href="{% url 'bitacora:owner_session_detail' session_id=session.id %}">{{ session.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No sessions reference this node yet.</p>
+  {% endif %}
 {% endblock %}

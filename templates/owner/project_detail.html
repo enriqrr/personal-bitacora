@@ -17,6 +17,8 @@
   {% endif %}
   <p><a href="{% url 'bitacora:owner_project_tree' project_slug=project.slug %}">Manage project tree</a></p>
   <p><a href="{% url 'bitacora:owner_node_create_root' project_slug=project.slug %}">Create root node</a></p>
+  <p><a href="{% url 'bitacora:owner_session_list' project_slug=project.slug %}">View work sessions</a></p>
+  <p><a href="{% url 'bitacora:owner_session_create' project_slug=project.slug %}">Create work session</a></p>
   <p><a href="{% url 'bitacora:owner_project_edit' slug=project.slug %}">Edit project</a></p>
   {% if project.status != "ARCHIVED" %}
     <form method="post" action="{% url 'bitacora:owner_project_archive' slug=project.slug %}">

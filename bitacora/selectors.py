@@ -1,6 +1,6 @@
 """Read/query helpers for Bitacora."""
 
-from .models import NodeDocument, Project, ProjectNode
+from .models import NodeDocument, Project, ProjectNode, WorkSession
 
 
 def get_public_projects():
@@ -131,3 +131,82 @@ def get_public_document_by_id(document_id):
     if not is_document_effectively_public(document):
         raise NodeDocument.DoesNotExist
     return document
+
+
+def get_owner_sessions_for_project(owner, project):
+    if project.owner_id != owner.id:
+        return WorkSession.objects.none()
+    return WorkSession.objects.filter(project=project)
+
+
+def get_owner_session_by_id(owner, session_id):
+    return WorkSession.objects.filter(project__owner=owner).get(pk=session_id)
+
+
+def is_work_session_effectively_public(work_session):
+    return (
+        work_session.visibility == WorkSession.Visibility.PUBLIC
+        and not work_session.is_archived
+        and work_session.project.visibility == Project.Visibility.PUBLIC
+        and work_session.project.status != Project.Status.ARCHIVED
+    )
+
+
+def get_public_sessions_for_project(project):
+    if (
+        project.visibility != Project.Visibility.PUBLIC
+        or project.status == Project.Status.ARCHIVED
+    ):
+        return WorkSession.objects.none()
+    return WorkSession.objects.filter(
+        project=project,
+        visibility=WorkSession.Visibility.PUBLIC,
+        is_archived=False,
+    )
+
+
+def get_public_session_by_id(session_id):
+    work_session = WorkSession.objects.select_related("project").get(pk=session_id)
+    if not is_work_session_effectively_public(work_session):
+        raise WorkSession.DoesNotExist
+    return work_session
+
+
+def get_public_node_references_for_session(work_session):
+    nodes = [
+        reference.node
+        for reference in work_session.node_references.select_related(
+            "node",
+            "node__project",
+            "node__parent",
+        )
+    ]
+    return [node for node in nodes if is_node_effectively_public(node)]
+
+
+def get_public_document_references_for_session(work_session):
+    documents = [
+        reference.document
+        for reference in work_session.document_references.select_related(
+            "document",
+            "document__project",
+            "document__node",
+            "document__node__project",
+            "document__node__parent",
+        )
+    ]
+    return [document for document in documents if is_document_effectively_public(document)]
+
+
+def get_owner_sessions_referencing_node(owner, node):
+    return WorkSession.objects.filter(
+        project__owner=owner,
+        node_references__node=node,
+    ).distinct()
+
+
+def get_owner_sessions_referencing_document(owner, document):
+    return WorkSession.objects.filter(
+        project__owner=owner,
+        document_references__document=document,
+    ).distinct()

@@ -6,6 +6,20 @@
     <title>{% block title %}Personal Bitacora{% endblock %}</title>
   </head>
   <body>
+    <header>
+      <nav aria-label="Primary navigation">
+        <a href="{% url 'bitacora:home' %}">Home</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'bitacora:dashboard' %}">Dashboard</a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit">Log out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Log in</a>
+        {% endif %}
+      </nav>
+    </header>
     <main>
       {% block content %}{% endblock %}
     </main>

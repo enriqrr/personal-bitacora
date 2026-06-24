@@ -1,6 +1,7 @@
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
+
+from .permissions import owner_required
 
 
 def health(request):
@@ -11,6 +12,6 @@ def home(request):
     return render(request, "public/home.html")
 
 
-@login_required
+@owner_required
 def dashboard(request):
     return render(request, "owner/dashboard.html")

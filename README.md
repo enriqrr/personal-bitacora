@@ -4,7 +4,7 @@ Personal Bitacora is a Django web app for publishing project documentation. Publ
 
 ## Module Status
 
-Module 0: Repository Foundation is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, placeholder owner dashboard, templates, tests, and local development documentation.
+Module 1: Authentication and Access Split is implemented. It contains the Django project scaffold, environment-based settings, minimal public routes, Django auth login/logout routes, owner-only dashboard access, templates, tests, and local development documentation.
 
 No project, document, work-session, tag, search, upload, registration, or deployment features are implemented yet.
 
@@ -54,6 +54,28 @@ Run Django's system check:
 ```bash
 python manage.py check
 ```
+
+## Local Owner Setup
+
+Run migrations:
+
+```bash
+.venv/bin/python manage.py migrate
+```
+
+Create the owner account as a superuser:
+
+```bash
+.venv/bin/python manage.py createsuperuser
+```
+
+Start the server:
+
+```bash
+.venv/bin/python manage.py runserver
+```
+
+Log in at `/accounts/login/`, then access `/dashboard/`.
 
 ## Local PostgreSQL
 
